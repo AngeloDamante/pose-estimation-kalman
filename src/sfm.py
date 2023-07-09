@@ -65,3 +65,22 @@ class SFM:
     def get_collect_data(self) -> Tuple[list, list]:
         return self.data_raw, self.data_filtered
 
+    #################################################################
+    def clean_signal(self, tvec, rvec):
+        measurement = compute_state(t_vec=tvec, r_vec=rvec)
+        self.kf.update(measurement)
+        self.data_raw.append([self.num_frame, tvec[0][0], tvec[1][0], tvec[2][0]])
+        if not self.kf.is_ready(): return tvec
+        logging.debug(f'[ REFGEN ]: CLEAN SIGNAL for {str(self.target)}')
+        state_hat = self.kf.predict()
+        tvec = np.array([state_hat[0], state_hat[1], state_hat[2]], np.float32)
+        self.data_filtered.append([self.num_frame, tvec[0][0], tvec[1][0], tvec[2][0]])
+        return tvec
+
+    def predict_signal(self):
+        if not self.kf.is_ready(): return None
+        logging.debug(f"[ REFGEN ]: PREDICTION for {str(self.target)}")
+        state_hat = self.kf.predict()
+        tvec = np.array([state_hat[0], state_hat[1], state_hat[2]], np.float32)
+        self.data_filtered.append([self.num_frame, tvec[0][0], tvec[1][0], tvec[2][0]])
+        return tvec
