@@ -71,6 +71,57 @@ class VisionKalmanFilter:
         if B is not None and self.nU > 0:
             self.kf.ControlMatrix = B.astype(np.float32)
 
+    def enable_vision_mode(self, k1: float, k2: float, dT: float) -> None:
+        """Set Matrixes for vision mode
+
+        F = [[1. 0. 0. 0. 0. 0. 0. dT. 0. 0. 0. 0. 0. 0.]
+             [0. 1. 0. 0. 0. 0. 0. 0. dT. 0. 0. 0. 0. 0.]
+             [0. 0. 1. 0. 0. 0. 0. 0. 0. dT. 0. 0. 0. 0.]
+             [0. 0. 0. 1. 0. 0. 0. 0. 0. 0. dT. 0. 0. 0.]
+             [0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. dT. 0. 0.]
+             [0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. dT. 0.]
+             [0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. dT.]
+             [0. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0.]
+             [0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0.]
+             [0. 0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0.]
+             [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0.]
+             [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0.]
+             [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 1. 0.]
+             [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 1.]]
+
+        H = [[1. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+             [0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+             [0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+             [0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+             [0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+             [0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0.]
+             [0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0.]]
+
+        Q = k1 * Id(nX)
+        R = k2 * Id(nZ)
+
+        Args:
+            k1 (float):
+            k2 (float):
+            dT (float):
+        """
+        if not self.is_enabled: return
+
+        # Transition Matrix
+        F = np.identity(self.nX)
+        F[np.arange(0, self.nZ), np.arange(self.nZ, self.nX)] = dT
+
+        # Measurement Matrix
+        H = np.hstack((np.eye(self.nZ), np.zeros((self.nZ, self.nZ))))
+
+        # Process Noise Covariance Matrix
+        Q = k1 * np.eye(self.nX)
+
+        # Measurement Noise Covariance Matrix
+        R = k2 * np.eye(self.nZ)
+        self.set_matrixes(F=F, H=H, Q=Q, R=R)
+        logging.debug('[ KF ]: F,H,Q,R setted')
+
     def update(self, z: np.ndarray) -> None:
         """Update KF
 
