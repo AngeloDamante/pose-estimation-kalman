@@ -84,3 +84,73 @@ class SFM:
         tvec = np.array([state_hat[0], state_hat[1], state_hat[2]], np.float32)
         self.data_filtered.append([self.num_frame, tvec[0][0], tvec[1][0], tvec[2][0]])
         return tvec
+
+        #################################################################
+
+    def check_for_disable(self, ids, corners) -> bool:
+        is_detected, _ = extract_desired_corners(id_desired=MARKER.disable_tracker.value, ids=ids, corners=corners)
+        if not is_detected: return False
+        logging.debug(f'[ REFGEN ]: disable marker detected')
+        self.num_lost_frame = 0
+        self.state = STATE.off
+        return True
+
+    #################################################################
+    def off_state(self, ids, corners):
+        flag, _ = extract_desired_corners(MARKER.enable_tracker.value, ids, corners)
+        self.publish(0.0, 0.0)
+
+        if len(self.data_filtered) > 0:
+            logging.debug('[ REFGEN ]: saving raw data')
+            save_data(filename_filtered, self.data_filtered, fields)
+        if len(self.data_raw) > 0:
+            logging.debug('[ REFGEN ]: saving filtered data')
+            save_data(filename_raw, self.data_raw, fields)
+
+        if not flag: return
+        logging.debug(f'[ REFGEN ]: enable marker detected')
+        self.state = STATE.enable
+
+    def enable_state(self, ids, corners):
+        # extract markers detected and compute reference marker
+        detected_targets, detected_corners = found_targets(ids, corners)
+        ref_marker = chose_target(detected_targets, detected_corners)
+        logging.debug(f'[ REFGEN ]: chosen marker = {ref_marker}')
+
+        # change state iff reference marker is detected and computed
+        if ref_marker is None: return
+        self.target = MARKER(ref_marker)
+        self.kf.reset()
+        self.data_raw.clear()
+        self.data_filtered.clear()
+        self.state = STATE.follow
+
+    def follow_state(self, ids, corners):
+        # detected targets
+        flag, corners = extract_desired_corners(id_desired=self.target.value, ids=ids, corners=corners)
+        tvec_hat = None
+        if not flag:
+            logging.debug(f"[ REFGEN ]: {str(self.target)} LOST")
+            if self.num_lost_frame < self.max_lost_frame:
+                self.num_lost_frame += 1
+                tvec_hat = self.predict_signal()
+        else:
+            logging.debug(f"[ REFGEN ]: FOLLOW {str(self.target)}")
+            self.num_lost_frame = 0
+            _, rvec, tvec = cv2.solvePnP(objectPoints=MARKER_POINTS, imagePoints=corners, cameraMatrix=INTRINSIC_MATRIX,
+                                         distCoeffs=DIST_COEFFS, flags=cv2.SOLVEPNP_ITERATIVE)
+            tvec_hat = self.clean_signal(tvec=tvec, rvec=rvec)
+
+        if tvec_hat is None:
+            self.publish(0.0, 0.0)
+            return
+
+        logging.debug(f'[ REFGEN ]: tvec = {tvec_hat}')
+        ref_d, ref_theta = compute_refs(tvec_hat[0][0], tvec_hat[1][0], tvec_hat[2][0])
+        if ref_d < self.d_signed:
+            logging.debug(f'[ REFGEN ]: target reached')
+            self.publish(0.0, 0.0)
+            self.state = STATE.enable
+        else:
+            logging.debug(f'[ REFGEN ]: target following')
+            self.publish(ref_d, ref_theta)
