@@ -93,3 +93,22 @@ class VisionKalmanFilter:
         if not self.is_enabled: return
         logging.debug('[ KF ]: make prediction')
         return self.kf.predict()
+
+    def start(self) -> None:
+        logging.debug('[ KF ]: start')
+        self.is_enabled = True
+
+    def stop(self) -> None:
+        if not self.is_enabled: return
+        logging.debug('[ KF ]: stop')
+        self.num_samples = 0
+        self.is_enabled = False
+
+    def reset(self) -> None:
+        if not self.is_enabled: return
+        logging.debug('[ KF ]: reset')
+        self.num_samples = 0
+
+    def is_ready(self) -> bool:
+        if not self.is_enabled: return False
+        return self.num_samples > self.min_samples
