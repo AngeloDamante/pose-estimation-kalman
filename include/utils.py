@@ -79,6 +79,7 @@ def compute_distances(corners) -> List[float]:
         distances.append(np.sqrt(tvec[0][0]**2 + tvec[1][0]**2 + tvec[2][0]**2))
     return distances
 
+
 def chose_target(markers, corners, delta_criteria=DELTA) -> MARKER:
     """Chose target with minimum distance and that satisfies a certain criteria
 
@@ -95,3 +96,19 @@ def chose_target(markers, corners, delta_criteria=DELTA) -> MARKER:
     if _md.size == 0:
         return None
     return _md[np.argmin(_md[:, 1], axis=0), 0]
+
+
+def compute_state(t_vec: np.ndarray, r_vec: np.ndarray) -> np.ndarray:
+    """_summary_
+
+    Args:
+        t_vec (np.ndarray): _description_
+        r_vec (np.ndarray): _description_
+
+    Returns:
+        np.ndarray: _description_
+    """
+    rotMat, _ = cv2.Rodrigues(np.array(r_vec))
+    Tx, Ty, Tz = t_vec[0][0], t_vec[1][0], t_vec[2][0]
+    qx, qy, qz, qw = R.from_matrix(rotMat).as_quat()
+    return np.array([Tx, Ty, Tz, qx, qy, qz, qw], dtype=np.float32)
