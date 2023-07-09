@@ -78,3 +78,20 @@ def compute_distances(corners) -> List[float]:
         _, _, tvec = cv2.solvePnP(objectPoints=MARKER_POINTS, imagePoints=target, cameraMatrix=INTRINSIC_MATRIX, distCoeffs=DIST_COEFFS, flags=cv2.SOLVEPNP_ITERATIVE)
         distances.append(np.sqrt(tvec[0][0]**2 + tvec[1][0]**2 + tvec[2][0]**2))
     return distances
+
+def chose_target(markers, corners, delta_criteria=DELTA) -> MARKER:
+    """Chose target with minimum distance and that satisfies a certain criteria
+
+    Args:
+        markers (np.ndarray):
+        corners (list[np.ndarray]):
+        delta_criteria (float, optional): Defaults to DELTA param
+
+    Returns:
+        MARKER:
+    """
+    distances = compute_distances(corners)
+    _md = np.array([(markers[i], distances[i]) for i in range(len(distances)) if distances[i] > delta_criteria], dtype=object)
+    if _md.size == 0:
+        return None
+    return _md[np.argmin(_md[:, 1], axis=0), 0]
