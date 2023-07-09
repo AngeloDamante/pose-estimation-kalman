@@ -62,3 +62,19 @@ def find_targets(ids, corners, targets=TARGETS) -> Tuple[list, list]:
             ids_targets.append(target.value)
             corners_targets.append(_corners)
     return ids_targets, corners_targets
+
+
+def compute_distances(corners) -> List[float]:
+    """ Compute distance for each input corners
+
+    Args:
+        corners (Nx4x2):
+
+    Returns:
+        distance for each corners
+    """
+    distances = []
+    for target in corners:
+        _, _, tvec = cv2.solvePnP(objectPoints=MARKER_POINTS, imagePoints=target, cameraMatrix=INTRINSIC_MATRIX, distCoeffs=DIST_COEFFS, flags=cv2.SOLVEPNP_ITERATIVE)
+        distances.append(np.sqrt(tvec[0][0]**2 + tvec[1][0]**2 + tvec[2][0]**2))
+    return distances
