@@ -112,3 +112,19 @@ def compute_state(t_vec: np.ndarray, r_vec: np.ndarray) -> np.ndarray:
     Tx, Ty, Tz = t_vec[0][0], t_vec[1][0], t_vec[2][0]
     qx, qy, qz, qw = R.from_matrix(rotMat).as_quat()
     return np.array([Tx, Ty, Tz, qx, qy, qz, qw], dtype=np.float32)
+
+
+def compute_refs(x: float, y: float, z: float) -> Tuple[float, float]:
+    """Compute references
+
+    Args:
+        x (float):
+        y (float):
+        z (float):
+
+    Returns:
+        Tuple[float, float]: d, theta
+    """
+    ref_d = np.sqrt(x**2 + y**2 + z**2)
+    ref_theta = np.rad2deg(np.arctan(x / z))
+    return ref_d, ref_theta
