@@ -30,6 +30,7 @@ import logging
 log_level = logging.DEBUG
 logger = configure_logger()
 
+
 class VisionKalmanFilter:
     def __init__(self, nX: int, nZ: int, min_samples: int = 10, nU: int = 0) -> None:
         """Filter creation
@@ -69,3 +70,26 @@ class VisionKalmanFilter:
             self.kf.measurementNoiseCov = R.astype(np.float32)
         if B is not None and self.nU > 0:
             self.kf.ControlMatrix = B.astype(np.float32)
+
+    def update(self, z: np.ndarray) -> None:
+        """Update KF
+
+        Args:
+            z (np.ndarray): measurements
+        """
+        if not self.is_enabled: return
+        logging.debug(f'[ KF ]: update measurements with {z}')
+        self.num_samples += 1
+        self.kf.correct(z)
+        if not self.is_ready(): _ = self.kf.predict()
+        logging.debug(f'[ KF ]: update measurements {self.num_samples}')
+
+    def predict(self) -> np.ndarray:
+        """Take predict state
+
+        Returns:
+            np.ndarry: x_prior
+        """
+        if not self.is_enabled: return
+        logging.debug('[ KF ]: make prediction')
+        return self.kf.predict()
