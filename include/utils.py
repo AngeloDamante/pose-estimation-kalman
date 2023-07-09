@@ -128,3 +128,17 @@ def compute_refs(x: float, y: float, z: float) -> Tuple[float, float]:
     ref_d = np.sqrt(x**2 + y**2 + z**2)
     ref_theta = np.rad2deg(np.arctan(x / z))
     return ref_d, ref_theta
+
+
+def save_data(filename:str, data:list, fields:list = None) -> None:
+    """Save data
+
+    Args:
+        filename (str):
+        data (list):
+        fields (list, optional): Defaults to None.
+    """
+    with open(filename, 'w') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        if fields: csvwriter.writerow(fields)
+        csvwriter.writerows(data)
