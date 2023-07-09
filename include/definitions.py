@@ -26,6 +26,9 @@ class COMMAND(Enum):
     turn_right: str = "TURN_RIGHT"
 
 
-
+class STATE(Enum):
+    off: str = "OFF"
+    enable: str = "ENABLE"
+    follow: str = "FOLLOW"
 
 TARGETS = [MARKER.target_0, MARKER.target_1]
