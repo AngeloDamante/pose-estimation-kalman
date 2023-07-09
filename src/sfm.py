@@ -154,3 +154,28 @@ class SFM:
         else:
             logging.debug(f'[ REFGEN ]: target following')
             self.publish(ref_d, ref_theta)
+
+    #################################################################
+    def on_iteration(self, ids, corners) -> None:
+        logging.debug(f'[ REFGEN ]: parsing ids = {ids}, corners = {corners}')
+        self.num_frame += 1
+
+        # OFF STATE
+        if self.state.value == STATE.off.value:
+            logging.debug('[ REFGEN ]: OFF STATE')
+            self.off_state(ids, corners)
+            return
+
+        # ENABLE STATE
+        elif self.state.value == STATE.enable.value:
+            logging.debug('[ REFGEN ]: ENABLE STATE')
+            if self.check_for_disable(ids, corners) is True: return
+            self.enable_state(ids, corners)
+            return
+
+        # FOLLOW STATE
+        elif self.state.value == STATE.follow.value:
+            logging.debug('[ REFGEN ]: FOLLOW STATE')
+            if self.check_for_disable(ids, corners) is True: return
+            self.follow_state(ids, corners)
+            return
